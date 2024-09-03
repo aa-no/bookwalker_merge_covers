@@ -64,26 +64,27 @@ class bw:
         self.all_books = all_books
         return all_books
 
-    def get_full_size_cover_url(self, url):
-        if "rimg.bookwalker.jp" in url:
-            url = re.sub(
-                r":\/\/[^/]*\/([0-9]+)\/[0-9a-zA-Z_]+(\.[^/.]*)$",
-                r"://c.bookwalker.jp/\1/t_700x780\2",
-                url,
-            )
+    # def get_full_size_cover_url(self, url):
+# Deprecated, see https://github.com/qsniyg/maxurl/issues/1255?continueFlag=36529d68f0230dbdf4fe2773d31057e1
+    #     if "rimg.bookwalker.jp" in url:
+    #         url = re.sub(
+    #             r":\/\/[^/]*\/([0-9]+)\/[0-9a-zA-Z_]+(\.[^/.]*)$",
+    #             r"://c.bookwalker.jp/\1/t_700x780\2",
+    #             url,
+    #         )
 
-        if "c.bookwalker.jp" in url:
-            match = re.search(r":\/\/[^/]*\/([0-9]+)\/[^/]*(?:[?#].*)?$", url)
-            if match:
-                number = match[1]
-                reversed_number = int(number[::-1]) - 1
-                url = (
-                    "https://c.bookwalker.jp/coverImage_"
-                    + str(reversed_number)
-                    + re.sub(r".*(\.[^/.?#]*)(?:[?#].*)?$", r"\1", url)
-                )
+    #     if "c.bookwalker.jp" in url:
+    #         match = re.search(r":\/\/[^/]*\/([0-9]+)\/[^/]*(?:[?#].*)?$", url)
+    #         if match:
+    #             number = match[1]
+    #             reversed_number = int(number[::-1]) - 1
+    #             url = (
+    #                 "https://c.bookwalker.jp/coverImage_"
+    #                 + str(reversed_number)
+    #                 + re.sub(r".*(\.[^/.?#]*)(?:[?#].*)?$", r"\1", url)
+    #             )
 
-        return url
+    #     return url
 
     def get_cover_url_from_book(self, url):
         response = self.s.get(url)
@@ -91,8 +92,14 @@ class bw:
         # cover url
         try:
             cover_url = soup.find('img', class_='lazy')['data-original']
+            
+            meta_tag = soup.find('meta', attrs={'name': 'twitter:image'})
+            twi_cover_url = meta_tag.get('content')
+            cover_tag = re.search(r'https://rimg\.bookwalker\.jp/([a-zA-Z0-9]+)/', twi_cover_url).group(1)
+            full_cover_url = 'https://c.bookwalker.jp/coverImage_' + cover_tag + '.jpg'
         except:
             cover_url = ''
+            full_cover_url = ''
         
         # title
         # title = soup.find('h1', class_="p-main__title").text
@@ -171,7 +178,7 @@ class bw:
                 'series': items['item_series'],
                 'price': {'total': items['price'], 'tax': items['tax'], 'currency': items['currency']},
                 'cover': cover_url,
-                'full_size_cover': self.get_full_size_cover_url(cover_url),
+                'full_size_cover': full_cover_url,
                 'bw_url': url,
                 'online_date': items['item_date'],
                 'tag': tag
